@@ -39,7 +39,7 @@ volatile int timer = 0;
 volatile int color_current = 0; // Blue (1), Yellow (2), other (3)
 
 // "color_next" : stores next color for comparison with color_current
-volatile char color_next = 0; // Blue (1), Yellow (2), other (3)
+volatile int color_next = 0; // Blue (1), Yellow (2), other (3)
 
 // --- ISR: an interrupt function that resets and reads the timer value (measures in clock ticks, 1/2 period of output signal of color sensor signal)
 
@@ -96,10 +96,10 @@ int getColor()
   // Store to global variable period in units of time (μs)
   period = (timer*(0.0625))*2; // 6.25ns = 0.0625μs
 
-  if (/*period of blue*/) { 
+  if ((period >= 20) && (period < 50)) { 
     // Set to Blue
     color_next = 1;
-  } else if (period of yellow) {
+  } else if ((period >= 80) && (period < 100)) {
     // Set to yellow
     color_next = 2;
   } else { 
@@ -123,21 +123,23 @@ int main(void)
 
   // Call getColor function
   getColor(); // Reads and updates period
-  if (/*period of blue*/) { 
+  if ((period >= 20) && (period < 50)) { 
     // Set to Blue
     color_current = 1;
-  } else if (period of yellow) {
+  } else if ((period >= 80) && (period < 100)) {
     // Set to yellow
     color_current = 2;
   } else { 
     // Set to other color
     color_current = 3;
   }
-  // Print the "period" -> serial communication
-  Serial.print("Period of color_current in μs: ");
-  Serial.println(period);
-  Serial.print("Current color: ")
+  // Serial communication
+  Serial.print("1st color_current: ");
   Serial.println(color_current);
+  Serial.print("1st color_next: ");
+  Serial.println(color_next);
+  Serial.print("Period: ");
+  Serial.println(period);
 
   while (color_current == color_next) // After getColor(), color_current == color_next
   {
@@ -146,30 +148,42 @@ int main(void)
     // Call getColor function
     getColor(); // Reads and updates period and color_next
 
-    // Serial communication 
-    Serial.print("Period of color_next in μs: ");
-    Serial.println(period);
-    Serial.print("Next color: ")
+    // Serial communication
+    Serial.print("1st color_current: ");
+    Serial.println(color_current);
+    Serial.print("New color_next: ");
     Serial.println(color_next);
+    Serial.print("Period: ");
+    Serial.println(period);
+
 
   } // Exit while loop when color_current != color_next
 
   // Turn 180 degrees
-  turnRight(900);
+  turnRight(960);
 
-  // Update current color
+  
   // Call getColor function
-  getColor(); // Reads and updates period
-  if (/*period of blue*/) { 
+  getColor(); // Reads and updates period, update color_next
+  // Update current color
+  if ((period >= 20) && (period < 50)) { 
     // Set to Blue
     color_current = 1;
-  } else if (period of yellow) {
+  } else if ((period >= 80) && (period < 100)) {
     // Set to yellow
     color_current = 2;
   } else { 
     // Set to other color
     color_current = 3;
   } // Now, color_current = color_next
+  
+  // Serial communication
+  Serial.print("2nd color_current: ");
+  Serial.println(color_current);
+  Serial.print("2nd new color_next: ");
+  Serial.println(color_next);
+  Serial.print("Period: ");
+  Serial.println(period);
 
 
   while (color_current == color_next) // After getColor(), color_current == color_next
@@ -179,11 +193,13 @@ int main(void)
     // Call getColor function
     getColor(); // Reads and updates period and color_next
 
-    // Serial communication 
-    Serial.print("Period of color_next in μs: ");
-    Serial.println(period);
-    Serial.print("Next color: ")
+    // Serial communication
+    Serial.print("2nd color_current: ");
+    Serial.println(color_current);
+    Serial.print("new color_next: ");
     Serial.println(color_next);
+    Serial.print("Period: ");
+    Serial.println(period);
 
   } // Exit while loop when color_current != color_next
 
