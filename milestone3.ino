@@ -92,7 +92,7 @@ int getColor()
   Serial.print("Timer in clock ticks: ");
   Serial.println(timer);
   period = (timer*(0.0625))*2; // 6.25ns = 0.0625μs
-  return period // Return value as a variable (period)
+  return period; // Return value as a variable (period)
 
 }
 
@@ -120,21 +120,53 @@ int main(void)
     // Add short delay (less than a second) for readability in monitor
     _delay_ms(500); // 1/2 a second
 
-    /* Control robot motion (steering w/ DC motors)
-     * 
-     *
-     */ 
-    // variable for initial
-    // If period is above certain ____ (detects on blue) -> Need to measure in lab
-    if (period > 200) { 
-      // Set a variable to Blue
-      color_current = B;
-    } else {
-      // Set a variable yellow
-      color_current = Y;
-    }
+    /*
+     * Blue ~ 310 period
+     * Black ~ 330 period
+     * Yellow ~ 200 period
+     * Floor ~ na
+
+    */
 
     
+    // Control robot motion (steering w/ DC motors)
+    // variable for initial
+    // If period is above certain ____ (detects on blue) -> Need to measure in lab
+    if ((period > 290) && (period < 315)) { 
+      // Set a variable to Blue
+      color_current = B;
+    } else if ((period < 290) && (period > 150)) {
+      // Set a variable yellow
+      color_current = Y;
+    } else {
+      color_current = O;
+    }
+    
+
+    while (color_current == color_next) {
+      driveForward();
+      if (color_current != color_next) {
+        break;
+      }
+    }
+
+    // Stop immediately
+    stop(10);
+    // Turn 180 degrees
+    turnRight(900);
+    // Move forward
+    while (color_current == color_next) {
+      driveForward();
+      if (color_current != color_next) {
+        break;
+      }
+    }
+    // Stop immediately
+    stop(10);
+
+
+    
+    /*
     if (color_current == color_next) {
       // Move forward
       driveForward();
@@ -151,6 +183,8 @@ int main(void)
  
 
     }
+    */
+    
 
 
   }
@@ -189,3 +223,4 @@ int delay(int n) {
   for(int i=0; i<n; i++){
      _delay_ms(1);
   }
+}
