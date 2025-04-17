@@ -17,6 +17,14 @@
  * When the output frequency of the color sensor (w/ blue filter) is high -> on blue
  * Red and green at equal intensity results in the color yellow, so when the output frequency of the color sensor (w/ blue filter) is low -> on yellow
  *
+ * Color detection - period measurement:
+ * Blue = 300-310 μs
+ * Yellow = l09 μs
+ * QTI Sensor connected to Arduino pin 
+ * White = +5V
+ * Red (center) = Arduino Digital input pin 2
+ * Black = GND
+ * Use interrupt to continuously check if black color detected (Vout = high) -> boarder detected
  */ 
 
 // --- Global Variables ---
@@ -28,23 +36,20 @@ volatile int period = 0;
 volatile int timer = 0; 
 
 // "color_current" : stores current/past color
-volatile char color_current = NULL; // Blue (B), Yellow (Y)
+volatile int color_current = 0; // Blue (1), Yellow (2), other (3)
 
 // "color_next" : stores next color for comparison with color_current
-volatile char color_next = NULL;
+volatile char color_next = 0; // Blue (1), Yellow (2), other (3)
 
 // --- ISR: an interrupt function that resets and reads the timer value (measures in clock ticks, 1/2 period of output signal of color sensor signal)
 
 ISR(PCINT2_vect) // Arduino port D pin 4 -> PCINT20 -> Pin Change Interrupt Request 2 
 {	
-
-  
-  
   // Resets the timer to zero on a rising edge (start measuring 1/2 period)
   if (PIND & 0b00010000) {
-    timer = TCNT1; // Store TIMER1 value TCNT1 in variable timer -> output frequency of color sensor
-  } else { // Stores the timer value in a variable ("timer") on a falling edge (end measuring 1/2 period)
     TCNT1 = 0; // Reset TIMER1 clock
+  } else { // Stores the timer value in a variable ("timer") on a falling edge (end measuring 1/2 period)
+    timer = TCNT1; // Store TIMER1 value TCNT1 in variable timer -> output frequency of color sensor
   }  
 }
 
@@ -87,13 +92,22 @@ int getColor()
   // (to prevent further interrupts until call getColor again)
   PCMSK2 = 0b00000000;
   
-  // Store to global variable period in units of time (ms)
   // Convert value for ISR from clock ticks to microseconds, then multiply by 2 to get 1 full period
-  Serial.print("Timer in clock ticks: ");
-  Serial.println(timer);
+  // Store to global variable period in units of time (μs)
   period = (timer*(0.0625))*2; // 6.25ns = 0.0625μs
-  return period; // Return value as a variable (period)
 
+  if (/*period of blue*/) { 
+    // Set to Blue
+    color_next = 1;
+  } else if (period of yellow) {
+    // Set to yellow
+    color_next = 2;
+  } else { 
+    // Set to other color
+    color_next = 3;
+  }
+
+  return period; // Return period value
 }
 
 
@@ -101,83 +115,83 @@ int main(void)
 {
 	
   // Call initColor function
-  initColor();
+  initColor(); // Initialize I/O pins, PCI, and TIMER1
 
   Serial.begin(9600); // For debugging, initialize serial communication
 
-  sei();
+  sei(); // Enable ISR
 
   // Call getColor function
-  getColor();
-   // Control robot motion (steering w/ DC motors)
-    // variable for initial
-    // If period is above certain ____ (detects on blue) -> Need to measure in lab
-    if ((period > 290) && (period < 315)) { 
-      // Set a variable to Blue
-      color_current = B;
-    } else if ((period < 290) && (period > 150)) {
-      // Set a variable yellow
-      color_current = Y;
-    } else {
-      color_current = O;
-    }
+  getColor(); // Reads and updates period
+  if (/*period of blue*/) { 
+    // Set to Blue
+    color_current = 1;
+  } else if (period of yellow) {
+    // Set to yellow
+    color_current = 2;
+  } else { 
+    // Set to other color
+    color_current = 3;
+  }
+  // Print the "period" -> serial communication
+  Serial.print("Period of color_current in μs: ");
+  Serial.println(period);
+  Serial.print("Current color: ")
+  Serial.println(color_current);
 
-    int counter = 0;
-    
-
-  while(1) 
+  while (color_current == color_next) // After getColor(), color_current == color_next
   {
+    driveForward();
 
     // Call getColor function
-    getColor();
+    getColor(); // Reads and updates period and color_next
 
-    
-
-    // Print the "period" -> serial communication
-    Serial.print("Period in μs: ");
+    // Serial communication 
+    Serial.print("Period of color_next in μs: ");
     Serial.println(period);
+    Serial.print("Next color: ")
+    Serial.println(color_next);
 
-    // Add short delay (less than a second) for readability in monitor
-    _delay_ms(500); // 1/2 a second
+  } // Exit while loop when color_current != color_next
 
-    if ((period > 290) && (period < 315)) { 
-      // Set a variable to Blue
-      color_next = B;
-    } else if ((period < 290) && (period > 150)) {
-      // Set a variable yellow
-      color_next = Y;
-    } else {
-      color_next = O;
-    }
+  // Turn 180 degrees
+  turnRight(900);
+
+  // Update current color
+  // Call getColor function
+  getColor(); // Reads and updates period
+  if (/*period of blue*/) { 
+    // Set to Blue
+    color_current = 1;
+  } else if (period of yellow) {
+    // Set to yellow
+    color_current = 2;
+  } else { 
+    // Set to other color
+    color_current = 3;
+  } // Now, color_current = color_next
 
 
-    if (color_current == color_next) {
-      driveForward();
-    } else {
-      counter += 1;
-      if (counter == 2) {
-        break;
-      }
-      stop(10);
-      // Turn 180 degrees
-      turnRight(900);
-      
+  while (color_current == color_next) // After getColor(), color_current == color_next
+  {
+    driveForward();
 
-    }
+    // Call getColor function
+    getColor(); // Reads and updates period and color_next
 
-  }
+    // Serial communication 
+    Serial.print("Period of color_next in μs: ");
+    Serial.println(period);
+    Serial.print("Next color: ")
+    Serial.println(color_next);
 
-    /*
-     * Blue ~ 310 period
-     * Black ~ 330 period
-     * Yellow ~ 200 period
-     * Floor ~ na
-
-    */
+  } // Exit while loop when color_current != color_next
 
 }
 
-int driveForward (){
+
+// Robot Steering Function
+int driveForward(){
     PORTB |= 0b00001010; //Pins 9 and 11 high
     PORTB &= 0b11111010; // pins 8 and 10 low
 }
